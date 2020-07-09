@@ -113,11 +113,14 @@ public class TrackActivity extends FragmentActivity implements OnMapReadyCallbac
                         Log.d("AAAA",""+currentUser.getLatitude()+"    "+currentUser.getLongitude());
                         LatLng myLatLng = new LatLng(currentUser.getLatitude(),currentUser.getLongitude());
                         mMap.addMarker(new MarkerOptions().position(myLatLng).title("Me"));
-                        locations.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).setValue(new Tracking(
-                                FirebaseAuth.getInstance().getCurrentUser().getEmail(),
-                                String.valueOf(mLastLocation.getLatitude()),
-                                String.valueOf(mLastLocation.getLongitude())
-                        ) );
+                        if (FirebaseAuth.getInstance().getCurrentUser()!=null){
+                            locations.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).setValue(new Tracking(
+                                    FirebaseAuth.getInstance().getCurrentUser().getEmail(),
+                                    String.valueOf(mLastLocation.getLatitude()),
+                                    String.valueOf(mLastLocation.getLongitude())
+                            ) );
+                        }
+
                     }else {
                         Toast.makeText(TrackActivity.this,"I just can't.",Toast.LENGTH_LONG).show();
                     }

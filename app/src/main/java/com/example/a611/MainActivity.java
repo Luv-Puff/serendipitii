@@ -1,13 +1,18 @@
 package com.example.a611;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -17,8 +22,10 @@ import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -40,6 +47,8 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
@@ -47,8 +56,12 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -73,6 +86,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     DatabaseReference onlineRef,counterRef,currentUserRef,locations;
 
+    LocationManager lm;
+    private Location mLastLocation;
+
+    private static final String CHANNEL_ID = "my_channel";
     private  final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -94,10 +111,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
+
+        }
+
         Dexter.withContext(this).withPermissions(Arrays.asList(
                 Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION
+                //, Manifest.permission.ACCESS_BACKGROUND_LOCATION
         )).withListener(new MultiplePermissionsListener() {
 
             @Override
@@ -109,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 requstLocationButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LocationManager lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+                        lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
                         boolean gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
                         boolean network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
 
@@ -178,6 +199,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         }).check();
 
+
         // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -214,9 +236,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
         }
 
-
-
-
+        setupDistance();
     }
 
     @Override
@@ -302,6 +322,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     }
     private  void  logOut(){
+        currentUserRef.removeValue();
         mAuth.signOut();
         Toast.makeText(MainActivity.this," 已登出",Toast.LENGTH_LONG).show();
         Loginbtn.setText(" Login");
@@ -347,6 +368,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             //Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             Toast.makeText(MainActivity.this,"歡迎，"+user.getEmail(),Toast.LENGTH_LONG).show();
+                            counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                    .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
                             Loginbtn.setText(""+user.getEmail()+" Logout");
                         } else {
                             // If sign in fails, display a message to the user.
@@ -358,6 +381,132 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         // ...
                     }
                 });
+    }
+
+    private void setupDistance(){
+        onlineRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue(Boolean.class)){
+                    if (FirebaseAuth.getInstance().getCurrentUser()!=null){
+                        currentUserRef.onDisconnect().removeValue();
+                        counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+        counterRef.orderByKey().addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String key) {
+                User newuser = dataSnapshot.getValue(User.class);
+                if (!newuser.getEmail().equals(FirebaseAuth.getInstance().getCurrentUser().getEmail())){
+                    locations.orderByChild("email").equalTo(newuser.getEmail()).addChildEventListener(new ChildEventListener() {
+                        @Override
+                        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                            Tracking tracking= dataSnapshot.getValue(Tracking.class);
+                            cauculateDistance(tracking);
+
+                        }
+
+                        @Override
+                        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                        }
+
+                        @Override
+                        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+                        }
+
+                        @Override
+                        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        }
+                    });
+                }
+
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String key) {
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void cauculateDistance(final Tracking t){
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED )
+        {
+            return;
+        }
+        LocationServices.getFusedLocationProviderClient(this).getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+            @Override
+            public void onComplete(@NonNull Task<Location> task) {
+                if (task.isSuccessful()){
+                    mLastLocation = task.getResult();
+                    if (mLastLocation != null){
+                        LatLng start = new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
+                        LatLng end = new LatLng(Double.parseDouble(t.getLat()),Double.parseDouble(t.getLong()));
+                        double dis = getDistance(start,end);
+                        if (dis <= 500){
+                            String notiText = "用戶"+t.getEmail()+"在附近，要約嗎?";
+                            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this,CHANNEL_ID)
+                                    .setContentText(notiText).setContentTitle("Serendipitii").setSmallIcon(R.mipmap.ic_launcher)
+                                    .setPriority(Notification.PRIORITY_HIGH).setAutoCancel(true);
+                            PendingIntent pendingIntent = PendingIntent.getActivity(MainActivity.this,0, new Intent(MainActivity.this,MainActivity.class),0);
+                            builder.setContentIntent(pendingIntent);
+                            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                            notificationManager.notify(0,builder.build());
+                        }
+                    }else {
+                    }
+                }else{
+                }
+            }
+        });
+
+    }
+
+    public double getDistance(LatLng start, LatLng end){
+        double lat1 = (Math.PI/180)*start.latitude;
+        double lat2 = (Math.PI/180)*end.latitude;
+
+        double lon1 = (Math.PI/180)*start.longitude;
+        double lon2 = (Math.PI/180)*end.longitude;
+
+        //地球半徑
+        double R = 6371;
+
+        //兩點間距離 km，如果想要米的話，結果*1000就可以了
+        double d =  Math.acos(Math.sin(lat1)*Math.sin(lat2)+Math.cos(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1))*R;
+
+        return d*1000;
     }
 
 }

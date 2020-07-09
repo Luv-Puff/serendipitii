@@ -86,10 +86,16 @@ public class UserListActivity extends AppCompatActivity {
 
         listOnline = findViewById(R.id.userlistrecycler);
         listOnline.setLayoutManager(new LinearLayoutManager(this));
+        locations = FirebaseDatabase.getInstance().getReference().child("Locations");
+        onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
+        counterRef = FirebaseDatabase.getInstance().getReference("lastOnline");
+        if (FirebaseAuth.getInstance().getCurrentUser()!=null){
+            currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        }
         //firebase
         FirebaseRecyclerOptions<User> options =
                 new FirebaseRecyclerOptions.Builder<User>()
-                        .setQuery(FirebaseDatabase.getInstance().getReference().child("lastOnline"), User.class)
+                        .setQuery(counterRef, User.class)
                         .build();
         userListAdapter = new UserListAdapter(this,options);
         listOnline.setAdapter( userListAdapter);
@@ -132,12 +138,7 @@ public class UserListActivity extends AppCompatActivity {
 
             }
         }));
-        locations = FirebaseDatabase.getInstance().getReference().child("Locations");
-        onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
-        counterRef = FirebaseDatabase.getInstance().getReference("lastOnline");
-        if (FirebaseAuth.getInstance().getCurrentUser()!=null){
-            currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
-        }
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED ){
             ActivityCompat.requestPermissions(this,new String[]{
@@ -237,9 +238,12 @@ public class UserListActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getValue(Boolean.class)){
-                    currentUserRef.onDisconnect().removeValue();
-                    counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                            .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                    if (FirebaseAuth.getInstance().getCurrentUser()!=null){
+                        currentUserRef.onDisconnect().removeValue();
+                        counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                    }
+
                     userListAdapter.notifyDataSetChanged();
                 }
             }
