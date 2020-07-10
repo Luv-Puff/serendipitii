@@ -406,6 +406,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String key) {
                 User newuser = dataSnapshot.getValue(User.class);
+                if (FirebaseAuth.getInstance().getCurrentUser()==null){
+                    return;
+                }
                 if (!newuser.getEmail().equals(FirebaseAuth.getInstance().getCurrentUser().getEmail())){
                     locations.orderByChild("email").equalTo(newuser.getEmail()).addChildEventListener(new ChildEventListener() {
                         @Override

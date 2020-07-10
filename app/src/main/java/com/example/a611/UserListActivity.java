@@ -88,7 +88,7 @@ public class UserListActivity extends AppCompatActivity {
         listOnline.setLayoutManager(new LinearLayoutManager(this));
         locations = FirebaseDatabase.getInstance().getReference().child("Locations");
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
-        counterRef = FirebaseDatabase.getInstance().getReference("lastOnline");
+        counterRef = FirebaseDatabase.getInstance().getReference("lastOnline") ;
         if (FirebaseAuth.getInstance().getCurrentUser()!=null){
             currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
         }

@@ -81,7 +81,8 @@ public class MyBackgroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID,
                     getString(R.string.app_name),
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_LOW);
+            mChannel.setSound(null,null);
             mnotificationManager.createNotificationChannel(mChannel);
         }
 
@@ -214,9 +215,12 @@ public class MyBackgroundService extends Service {
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this,0,
                 new Intent(this,MainActivity.class),0);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,CHANNEL_ID)
-                .addAction(R.drawable.ic_launch_black_24dp,"Launch",activityPendingIntent).setSmallIcon(R.mipmap.ic_launcher)
+                .setDefaults(0).setSound(null).setVibrate(null)
+                .addAction(R.drawable.ic_launch_black_24dp,"Launch",activityPendingIntent)
+                .addAction(R.drawable.ic_cancel_black_24dp,"Stop Service", servicePendingIntent)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentText(text).setContentTitle(Common.getLocationTitle(this)).setOngoing(true)
-                .setPriority(Notification.PRIORITY_HIGH).setTicker(text).setWhen(System.currentTimeMillis());
+                .setPriority(Notification.PRIORITY_LOW).setTicker(text).setWhen(System.currentTimeMillis());
 
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
             builder.setChannelId(CHANNEL_ID);
