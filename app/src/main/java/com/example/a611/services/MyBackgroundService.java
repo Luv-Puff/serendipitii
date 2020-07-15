@@ -1,4 +1,4 @@
-package com.example.a611;
+package com.example.a611.services;
 
 import android.app.ActivityManager;
 import android.app.Notification;
@@ -7,31 +7,31 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.provider.Settings;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 
+import com.example.a611.MainActivity;
+import com.example.a611.R;
+import com.example.a611.classes.Common;
+import com.example.a611.classes.SendLocationActivitiy;
+import com.example.a611.classes.Tracking;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -213,7 +213,7 @@ public class MyBackgroundService extends Service {
         intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION,true);
         PendingIntent servicePendingIntent = PendingIntent.getService(this,0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this,0,
-                new Intent(this,MainActivity.class),0);
+                new Intent(this, MainActivity.class),0);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,CHANNEL_ID)
                 .setDefaults(0).setSound(null).setVibrate(null)
                 .addAction(R.drawable.ic_launch_black_24dp,"Launch",activityPendingIntent)
@@ -244,7 +244,7 @@ public class MyBackgroundService extends Service {
 //    }
 
     public class LocalBinder extends Binder {
-        MyBackgroundService getService(){
+        public MyBackgroundService getService(){
             return MyBackgroundService.this;
         }
     }

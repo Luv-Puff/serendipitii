@@ -1,4 +1,4 @@
-package com.example.a611;
+package com.example.a611.services;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.location.Location;
 import android.widget.Toast;
 
+import com.example.a611.classes.Tracking;
 import com.google.android.gms.location.LocationResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;

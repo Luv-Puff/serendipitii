@@ -1,4 +1,4 @@
-package com.example.a611;
+package com.example.a611.recycler;
 import android.content.Context;
 import android.view.GestureDetector;
 import android.view.MotionEvent;

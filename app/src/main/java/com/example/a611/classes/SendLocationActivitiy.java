@@ -1,8 +1,8 @@
-package com.example.a611;
+package com.example.a611.classes;
 
 import android.location.Location;
 
-class SendLocationActivitiy {
+public class SendLocationActivitiy {
     private  Location location;
     public SendLocationActivitiy(Location mlocation) {
         this.location =mlocation;

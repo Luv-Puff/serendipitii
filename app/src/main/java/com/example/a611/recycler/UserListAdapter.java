@@ -1,6 +1,5 @@
-package com.example.a611;
+package com.example.a611.recycler;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
@@ -13,6 +12,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.a611.R;
+import com.example.a611.TrackActivity;
+import com.example.a611.UserListActivity;
+import com.example.a611.classes.User;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 
@@ -54,7 +57,7 @@ public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapte
             layout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent i = new Intent(mCtx,TrackActivity.class);
+                    Intent i = new Intent(mCtx, TrackActivity.class);
                     i.putExtra("email",email.getText());
 
                     if (check.getVisibility()==View.VISIBLE){

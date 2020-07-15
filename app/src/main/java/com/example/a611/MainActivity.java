@@ -2,11 +2,9 @@ package com.example.a611;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
 import android.Manifest;
@@ -16,7 +14,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.ServiceConnection;
@@ -24,31 +21,32 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.a611.classes.Common;
+import com.example.a611.classes.SendLocationActivitiy;
+import com.example.a611.classes.Tracking;
+import com.example.a611.classes.User;
+import com.example.a611.services.FirebaseMessagingService;
+import com.example.a611.services.MyBackgroundService;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
-import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
@@ -62,6 +60,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -256,6 +256,23 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             currentUserRef.onDisconnect().removeValue();
             counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                     .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+            FirebaseInstanceId.getInstance().getInstanceId()
+                    .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                            if (!task.isSuccessful()) { return;  }
+                            if( task.getResult() == null)
+                                return;
+                            // Get new Instance ID token
+                            String token = task.getResult().getToken();
+
+                            // Log and toast
+                            Log.i("FCM","firebase token " + token);
+                            counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
+                                    .setValue(token);
+                        }
+                    });
+
         }
     }
 
@@ -367,9 +384,26 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             // Sign in success, update UI with the signed-in user's information
                             //Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mAuth.getCurrentUser();
-                            Toast.makeText(MainActivity.this,"歡迎，"+user.getEmail(),Toast.LENGTH_LONG).show();
+                            //Toast.makeText(MainActivity.this,"歡迎，"+user.getEmail(),Toast.LENGTH_LONG).show();
                             counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                                     .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                            FirebaseInstanceId.getInstance().getInstanceId()
+                                    .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                                            if (!task.isSuccessful()) { return;  }
+                                            if( task.getResult() == null)
+                                                return;
+                                            // Get new Instance ID token
+                                            String token = task.getResult().getToken();
+
+                                            // Log and toast
+                                            Log.i("FCM","firebase token " + token);
+                                            counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
+                                                    .setValue(token);
+                                        }
+                                    });
+
                             Loginbtn.setText(""+user.getEmail()+" Logout");
                         } else {
                             // If sign in fails, display a message to the user.
@@ -392,6 +426,22 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                         currentUserRef.onDisconnect().removeValue();
                         counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                                 .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                        FirebaseInstanceId.getInstance().getInstanceId()
+                                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                                        if (!task.isSuccessful()) { return;  }
+                                        if( task.getResult() == null)
+                                            return;
+                                        // Get new Instance ID token
+                                        String token = task.getResult().getToken();
+
+                                        // Log and toast
+                                        Log.i("FCM","firebase token " + token);
+                                        counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
+                                                .setValue(token);
+                                    }
+                                });
                     }
 
                 }

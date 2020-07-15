@@ -1,10 +1,11 @@
-package com.example.a611;
+package com.example.a611.classes;
 
 import android.content.Context;
 import android.location.Location;
 
 import androidx.preference.PreferenceManager;
 
+import com.example.a611.services.MyBackgroundService;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.DateFormat;

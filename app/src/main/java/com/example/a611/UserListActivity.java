@@ -1,7 +1,6 @@
 package com.example.a611;
 
 import android.Manifest;
-import android.app.ActionBar;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,6 +18,11 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.a611.classes.User;
+import com.example.a611.recycler.RecyclerTouchListener;
+import com.example.a611.recycler.UserListAdapter;
+import com.example.a611.services.MyLocationService;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
@@ -31,6 +35,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -185,7 +191,7 @@ public class UserListActivity extends AppCompatActivity {
     }
 
     private PendingIntent getPendingIntent() {
-        Intent intent = new Intent(this,MyLocationService.class);
+        Intent intent = new Intent(this, MyLocationService.class);
         intent.setAction(MyLocationService.ACTION_PROCESS_UPDATE);
 
         return PendingIntent.getBroadcast(this,0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
@@ -242,6 +248,22 @@ public class UserListActivity extends AppCompatActivity {
                         currentUserRef.onDisconnect().removeValue();
                         counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                                 .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                        FirebaseInstanceId.getInstance().getInstanceId()
+                                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                                        if (!task.isSuccessful()) { return;  }
+                                        if( task.getResult() == null)
+                                            return;
+                                        // Get new Instance ID token
+                                        String token = task.getResult().getToken();
+
+                                        // Log and toast
+                                        Log.i("FCM","firebase token " + token);
+                                        counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
+                                                .setValue(token);
+                                    }
+                                });
                     }
 
                     userListAdapter.notifyDataSetChanged();

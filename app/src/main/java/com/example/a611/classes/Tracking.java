@@ -1,4 +1,4 @@
-package com.example.a611;
+package com.example.a611.classes;
 
 public class Tracking {
     private String email,Lat,Long;
