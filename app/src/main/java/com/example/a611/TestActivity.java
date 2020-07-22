@@ -13,12 +13,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.a611.SendNotificationPack.APIService;
+import com.example.a611.SendNotificationPack.Client;
+import com.example.a611.SendNotificationPack.Data;
+import com.example.a611.SendNotificationPack.MyResponse;
+import com.example.a611.SendNotificationPack.NotificationSender;
+import com.example.a611.SendNotificationPack.Token;
 import com.example.a611.classes.User;
 import com.example.a611.recycler.RecyclerTouchListener;
 import com.example.a611.recycler.UserListAdapter;
@@ -30,6 +37,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -39,11 +47,16 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.List;
 
-public class UserListActivity extends AppCompatActivity {
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-    DatabaseReference onlineRef,counterRef,currentUserRef,locations,TokenRef;
+public class TestActivity extends AppCompatActivity {
+
+    DatabaseReference onlineRef,counterRef,currentUserRef,locations,tokenRef;
 
     RecyclerView listOnline;
     private UserListAdapter userListAdapter;
@@ -67,6 +80,8 @@ public class UserListActivity extends AppCompatActivity {
     int selected_counter=0;
     public static boolean enableActionBar = false;
 
+    private APIService apiService;
+
 
 
     @Override
@@ -89,13 +104,15 @@ public class UserListActivity extends AppCompatActivity {
         listTxt = findViewById(R.id.usrList_barTxt);
         listTxt.setVisibility(View.GONE);
 
+        apiService = Client.getClient("https://fcm.googleapis.com/").create(APIService.class);
+
 
         listOnline = findViewById(R.id.userlistrecycler);
         listOnline.setLayoutManager(new LinearLayoutManager(this));
         locations = FirebaseDatabase.getInstance().getReference().child("Locations");
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
         counterRef = FirebaseDatabase.getInstance().getReference("lastOnline") ;
-        TokenRef= FirebaseDatabase.getInstance().getReference("Tokens") ;
+        tokenRef = FirebaseDatabase.getInstance().getReference("Tokens") ;
         if (FirebaseAuth.getInstance().getCurrentUser()!=null){
             currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
         }
@@ -123,7 +140,7 @@ public class UserListActivity extends AppCompatActivity {
                         listTxt.setVisibility(View.VISIBLE);
                     }
 
-                    Toast.makeText(UserListActivity.this,""+selected_email+" added",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TestActivity.this,""+selected_email+" added",Toast.LENGTH_SHORT).show();
                 }else{
                     emaillist.remove(selected_email);
                     selected_counter --;
@@ -136,7 +153,7 @@ public class UserListActivity extends AppCompatActivity {
                         fwBtn.setVisibility(View.GONE);
                         userListAdapter.notifyDataSetChanged();
                     }
-                    Toast.makeText(UserListActivity.this,""+selected_email+" deleted" ,Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TestActivity.this,""+selected_email+" deleted" ,Toast.LENGTH_SHORT).show();
                 }
 
             }
@@ -171,9 +188,36 @@ public class UserListActivity extends AppCompatActivity {
         fwBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(UserListActivity.this,TrackActivity.class);
-                intent.putStringArrayListExtra("email", (ArrayList<String>) emaillist);
-                startActivity(intent);
+                for (String email:emaillist){
+                    tokenRef.orderByChild("email").equalTo(email).addChildEventListener(new ChildEventListener() {
+                        @Override
+                        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                            Token newtoken = dataSnapshot.getValue(Token.class);
+                            sendNotifications(newtoken.getToken(),"testTitle","TestMessage");
+                            //Log.d("TUSK",""+newtoken.getToken());
+                        }
+
+                        @Override
+                        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                        }
+
+                        @Override
+                        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+                        }
+
+                        @Override
+                        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        }
+                    });
+                }
             }
         });
 
@@ -219,6 +263,26 @@ public class UserListActivity extends AppCompatActivity {
         userListAdapter.stopListening();
     }
 
+    public void sendNotifications(String usertoken, String title, String message) {
+        Data data = new Data(title, message);
+        NotificationSender sender = new NotificationSender(data, usertoken);
+        apiService.sendNotifcation(sender).enqueue(new Callback<MyResponse>() {
+            @Override
+            public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
+                if (response.code() == 200) {
+                    if (response.body().success != 1) {
+                        Toast.makeText(TestActivity.this, "Failed ", Toast.LENGTH_LONG);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MyResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
 
 
     private boolean email_exist(String search,List<String> myList){
@@ -236,7 +300,7 @@ public class UserListActivity extends AppCompatActivity {
                 if (grantResults.length>0&&grantResults[0] == PackageManager.PERMISSION_GRANTED){
                     updateLocation();
 
-            }
+                }
         }
     }
 
@@ -285,7 +349,7 @@ public class UserListActivity extends AppCompatActivity {
                                 fwBtn.setVisibility(View.GONE);
                                 userListAdapter.notifyDataSetChanged();
                             }
-                            Toast.makeText(UserListActivity.this,""+email+" disappered" ,Toast.LENGTH_SHORT).show();
+                            Toast.makeText(TestActivity.this,""+email+" disappered" ,Toast.LENGTH_SHORT).show();
                         }
                     }
 

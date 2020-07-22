@@ -10,6 +10,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.a611.R;
@@ -18,6 +19,7 @@ import com.example.a611.UserListActivity;
 import com.example.a611.classes.User;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapter.viewHolder> {
     private Context mCtx;
@@ -32,7 +34,13 @@ public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapte
 
     @Override
     protected void onBindViewHolder(@NonNull final viewHolder holder, int position, @NonNull User model) {
-        holder.email.setText(model.getEmail());
+        if(FirebaseAuth.getInstance().getCurrentUser()!=null&&FirebaseAuth.getInstance().getCurrentUser().getEmail().equals(model.getEmail())){
+            holder.user_Card.setVisibility(View.GONE);
+            holder.layout.setVisibility(View.GONE);
+        }else{
+            holder.email.setText(model.getEmail());
+        }
+
         if (!UserListActivity.enableActionBar){
             holder.check.setVisibility(View.GONE);
         }
@@ -49,11 +57,13 @@ public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapte
 
     class viewHolder extends RecyclerView.ViewHolder{
         TextView email; RelativeLayout layout; ImageView check;
+        CardView user_Card;
         public viewHolder(View view){
             super(view);
             email = view.findViewById(R.id.usr_email);
             check = view.findViewById(R.id.user_checked);
             layout = view.findViewById(R.id.user_card);
+            user_Card = view.findViewById(R.id.user_Card);
             layout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

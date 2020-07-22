@@ -33,4 +33,10 @@
         android:layout_height="wrap_content"
         android:text="UserList" />
 
+    <Button
+        android:id="@+id/Testbtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Test" />
+
 </LinearLayout>

@@ -29,6 +29,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.a611.SendNotificationPack.Token;
 import com.example.a611.classes.Common;
 import com.example.a611.classes.SendLocationActivitiy;
 import com.example.a611.classes.Tracking;
@@ -77,14 +78,14 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    Button requstLocationButton,removeLocationButton,Loginbtn,usrListbtn;
+    Button requstLocationButton,removeLocationButton,Loginbtn,usrListbtn,testbtn;
     MyBackgroundService myBackgroundService = null;
     boolean mBound =false;
 
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
 
-    DatabaseReference onlineRef,counterRef,currentUserRef,locations;
+    DatabaseReference onlineRef,counterRef,currentUserRef,locations,TokenRef;
 
     LocationManager lm;
     private Location mLastLocation;
@@ -228,8 +229,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             }
         });
 
+        testbtn = findViewById(R.id.Testbtn);
+        testbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,TestActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+
 
         locations = FirebaseDatabase.getInstance().getReference().child("Locations");
+        TokenRef = FirebaseDatabase.getInstance().getReference().child("Tokens");
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
         counterRef = FirebaseDatabase.getInstance().getReference("lastOnline");
         if(FirebaseAuth.getInstance().getCurrentUser()!=null){
@@ -265,11 +278,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                                 return;
                             // Get new Instance ID token
                             String token = task.getResult().getToken();
+                            Token newToken = new Token();
+                            newToken.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                            newToken.setToken(token);
 
                             // Log and toast
-                            Log.i("FCM","firebase token " + token);
-                            counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
-                                    .setValue(token);
+                            //Log.i("FCM","firebase token " + token);
+                            TokenRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).setValue(newToken);
                         }
                     });
 
@@ -399,8 +414,11 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                                             // Log and toast
                                             Log.i("FCM","firebase token " + token);
-                                            counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
-                                                    .setValue(token);
+                                            Token newToken = new Token();
+                                            newToken.setEmail(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                            newToken.setToken(token);
+
+                                            TokenRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).setValue(newToken);
                                         }
                                     });
 
@@ -438,8 +456,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                                         // Log and toast
                                         Log.i("FCM","firebase token " + token);
-                                        counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("Token")
-                                                .setValue(token);
                                     }
                                 });
                     }
