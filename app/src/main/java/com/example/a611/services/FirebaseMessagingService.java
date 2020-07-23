@@ -81,7 +81,10 @@ public class FirebaseMessagingService extends com.google.firebase.messaging.Fire
         PendingIntent pIntentAdd = PendingIntent.getBroadcast(this,1,intentActionAdd,PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent pIntentDeny = PendingIntent.getBroadcast(this,2,intentActionDeny,PendingIntent.FLAG_UPDATE_CURRENT);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(this,0, new Intent(this, FCMResultActivity.class),0);
+        Intent toFCMresult = new Intent(this, FCMResultActivity.class);
+        toFCMresult.putExtra("IID",Invitation_ID);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,0, toFCMresult,PendingIntent.FLAG_UPDATE_CURRENT);
         NotificationCompat.Builder builder= new NotificationCompat.Builder(this,CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher).setContentTitle(title).setContentText(message)
                 .addAction(R.drawable.ic_launch_black_24dp, "參加", pIntentAdd)

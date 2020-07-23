@@ -1,5 +1,6 @@
 package com.example.a611.SendNotificationPack;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,9 +15,6 @@ public class ActionReceiver extends BroadcastReceiver {
     DatabaseReference inviteRef;String IID;
     @Override
     public void onReceive(Context context, Intent intent) {
-
-
-
         boolean action=intent.getBooleanExtra("action",true);
         IID = intent.getStringExtra("IID");
 

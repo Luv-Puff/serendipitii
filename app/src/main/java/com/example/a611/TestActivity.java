@@ -230,6 +230,9 @@ public class TestActivity extends AppCompatActivity {
                         }
                     });
                 }
+                Intent intent = new Intent(TestActivity.this,FCMResultActivity.class);
+                intent.putExtra("IID",randaomString);
+                startActivity(intent);
             }
         });
 
