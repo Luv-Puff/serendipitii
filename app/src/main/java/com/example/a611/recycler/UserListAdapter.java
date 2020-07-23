@@ -2,6 +2,7 @@ package com.example.a611.recycler;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +40,7 @@ public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapte
             holder.layout.setVisibility(View.GONE);
         }else{
             holder.email.setText(model.getEmail());
+            holder.uid.setText(model.getUID());
         }
 
         if (!UserListActivity.enableActionBar){
@@ -56,19 +58,18 @@ public class UserListAdapter extends FirebaseRecyclerAdapter<User,UserListAdapte
     }
 
     class viewHolder extends RecyclerView.ViewHolder{
-        TextView email; RelativeLayout layout; ImageView check;
+        TextView email,uid; RelativeLayout layout; ImageView check;
         CardView user_Card;
         public viewHolder(View view){
             super(view);
             email = view.findViewById(R.id.usr_email);
+            uid = view.findViewById(R.id.usr_UID);
             check = view.findViewById(R.id.user_checked);
             layout = view.findViewById(R.id.user_card);
             user_Card = view.findViewById(R.id.user_Card);
             layout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent i = new Intent(mCtx, TrackActivity.class);
-                    i.putExtra("email",email.getText());
 
                     if (check.getVisibility()==View.VISIBLE){
                         check.setVisibility(View.GONE);

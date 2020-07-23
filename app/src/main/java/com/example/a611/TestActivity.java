@@ -23,10 +23,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.a611.SendNotificationPack.APIService;
 import com.example.a611.SendNotificationPack.Client;
 import com.example.a611.SendNotificationPack.Data;
+import com.example.a611.SendNotificationPack.Invitation;
+import com.example.a611.SendNotificationPack.InvitationSender;
 import com.example.a611.SendNotificationPack.MyResponse;
 import com.example.a611.SendNotificationPack.NotificationSender;
 import com.example.a611.SendNotificationPack.Token;
 import com.example.a611.classes.User;
+import com.example.a611.classes.inviter;
 import com.example.a611.recycler.RecyclerTouchListener;
 import com.example.a611.recycler.UserListAdapter;
 import com.example.a611.services.MyLocationService;
@@ -49,6 +52,7 @@ import com.google.firebase.iid.InstanceIdResult;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -56,7 +60,7 @@ import retrofit2.Response;
 
 public class TestActivity extends AppCompatActivity {
 
-    DatabaseReference onlineRef,counterRef,currentUserRef,locations,tokenRef;
+    DatabaseReference onlineRef,counterRef,currentUserRef,locations,tokenRef,invititations;
 
     RecyclerView listOnline;
     private UserListAdapter userListAdapter;
@@ -74,7 +78,7 @@ public class TestActivity extends AppCompatActivity {
 
     FusedLocationProviderClient fusedLocationClient;
 
-    List<String> emaillist = new ArrayList<>();
+    List<String> userlist = new ArrayList<>();
     private Toolbar toolbar;
     ImageButton bckBtn ,fwBtn;TextView listTxt;
     int selected_counter=0;
@@ -113,6 +117,7 @@ public class TestActivity extends AppCompatActivity {
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
         counterRef = FirebaseDatabase.getInstance().getReference("lastOnline") ;
         tokenRef = FirebaseDatabase.getInstance().getReference("Tokens") ;
+        invititations = FirebaseDatabase.getInstance().getReference("Invitations");
         if (FirebaseAuth.getInstance().getCurrentUser()!=null){
             currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
         }
@@ -126,11 +131,14 @@ public class TestActivity extends AppCompatActivity {
         listOnline.addOnItemTouchListener(new RecyclerTouchListener(this, listOnline, new RecyclerTouchListener.ClickListener() {
             @Override
             public void onClick(View view, int position) {
+                TextView uid_textView = view.findViewById(R.id.usr_UID);
+                String selected_uid = uid_textView.getText().toString();
                 TextView email_textView = view.findViewById(R.id.usr_email);
                 String selected_email = email_textView.getText().toString();
+                
 
-                if (!email_exist(selected_email,emaillist)){
-                    emaillist.add(selected_email);
+                if (!email_exist(selected_uid,userlist)){
+                    userlist.add(selected_uid);
                     selected_counter ++;
                     if (selected_counter>0){
                         enableActionBar = true;
@@ -142,7 +150,7 @@ public class TestActivity extends AppCompatActivity {
 
                     Toast.makeText(TestActivity.this,""+selected_email+" added",Toast.LENGTH_SHORT).show();
                 }else{
-                    emaillist.remove(selected_email);
+                    userlist.remove(selected_uid);
                     selected_counter --;
                     listTxt.setText(""+selected_counter+" selected");
                     if (selected_counter == 0){
@@ -181,20 +189,24 @@ public class TestActivity extends AppCompatActivity {
                 listTxt.setVisibility(View.GONE);
                 bckBtn.setVisibility(View.GONE);
                 fwBtn.setVisibility(View.GONE);
-                emaillist.clear();
+                userlist.clear();
                 userListAdapter.notifyDataSetChanged();
             }
         });
         fwBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                for (String email:emaillist){
-                    tokenRef.orderByChild("email").equalTo(email).addChildEventListener(new ChildEventListener() {
+                final String randaomString = random();
+                inviter newinviter  =new inviter(FirebaseAuth.getInstance().getCurrentUser().getUid());
+                invititations.child(randaomString).setValue(newinviter);
+                for (String uid:userlist){
+                    invititations.child(randaomString).child(uid).setValue("");
+                    tokenRef.orderByKey().equalTo(uid).addChildEventListener(new ChildEventListener() {
                         @Override
                         public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                            Token newtoken = dataSnapshot.getValue(Token.class);
-                            sendNotifications(newtoken.getToken(),"testTitle","TestMessage");
-                            //Log.d("TUSK",""+newtoken.getToken());
+                            Token token = dataSnapshot.getValue(Token.class);
+                            //Log.d("TUSK",""+token.getToken());
+                            sendInvitations(token.getToken(),"TestTitle",FirebaseAuth.getInstance().getCurrentUser().getEmail()+" Test Message",randaomString);
                         }
 
                         @Override
@@ -263,10 +275,11 @@ public class TestActivity extends AppCompatActivity {
         userListAdapter.stopListening();
     }
 
-    public void sendNotifications(String usertoken, String title, String message) {
-        Data data = new Data(title, message);
-        NotificationSender sender = new NotificationSender(data, usertoken);
-        apiService.sendNotifcation(sender).enqueue(new Callback<MyResponse>() {
+    public void sendInvitations(String usertoken, String title, String message,String IID) {
+        Invitation data = new Invitation(title, message,IID);
+        InvitationSender sender = new InvitationSender(data,usertoken);
+        //NotificationSender sender = new NotificationSender(data, usertoken);
+        apiService.sendInvitation(sender).enqueue(new Callback<MyResponse>() {
             @Override
             public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
                 if (response.code() == 200) {
@@ -312,7 +325,7 @@ public class TestActivity extends AppCompatActivity {
                     if (FirebaseAuth.getInstance().getCurrentUser()!=null){
                         currentUserRef.onDisconnect().removeValue();
                         counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online",FirebaseAuth.getInstance().getCurrentUser().getUid()));
                     }
 
                     userListAdapter.notifyDataSetChanged();
@@ -327,8 +340,8 @@ public class TestActivity extends AppCompatActivity {
         counterRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (emaillist.size()>0){
-                    for (String email :emaillist){
+                if (userlist.size()>0){
+                    for (String email :userlist){
                         boolean ifexist = false;
                         for (DataSnapshot Postsnapshot:dataSnapshot.getChildren()){
                             User user = Postsnapshot.getValue(User.class);
@@ -338,7 +351,7 @@ public class TestActivity extends AppCompatActivity {
                             }
                         }
                         if (!ifexist){
-                            emaillist.remove(email);
+                            userlist.remove(email);
                             selected_counter --;
                             listTxt.setText(""+selected_counter+" selected");
                             if (selected_counter == 0){
@@ -363,5 +376,17 @@ public class TestActivity extends AppCompatActivity {
             }
         });
 
+    }
+    public static String random() {
+        Random generator = new Random();
+        char[] chars= "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+        StringBuilder randomStringBuilder = new StringBuilder();
+        int randomLength = 12;
+        char tempChar;
+        for (int i = 0; i < randomLength; i++){
+            tempChar = chars[generator.nextInt(chars.length)];
+            randomStringBuilder.append(tempChar);
+        }
+        return randomStringBuilder.toString();
     }
 }

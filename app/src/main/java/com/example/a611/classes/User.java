@@ -1,16 +1,27 @@
 package com.example.a611.classes;
 
 public class User {
-    private String email,status,Token;
+    private String email,status,UID;
+
+    
+
+    public User(String email, String status, String token) {
+        this.email = email;
+        this.status = status;
+        UID = token;
+    }
 
     public User(){
 
     }
-    public User(String email,String status){
-        this.email = email;
-        this.status = status;
-        return;
+    public String getUID() {
+        return UID;
     }
+
+    public void setUID(String token) {
+        UID = token;
+    }
+    
 
     public String getEmail() {
         return email;

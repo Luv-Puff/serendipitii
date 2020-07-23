@@ -268,7 +268,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             currentUserRef = FirebaseDatabase.getInstance().getReference("lastOnline").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
             currentUserRef.onDisconnect().removeValue();
             counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                    .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                    .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online",FirebaseAuth.getInstance().getCurrentUser().getUid()));
             FirebaseInstanceId.getInstance().getInstanceId()
                     .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                         @Override
@@ -401,7 +401,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                             FirebaseUser user = mAuth.getCurrentUser();
                             //Toast.makeText(MainActivity.this,"歡迎，"+user.getEmail(),Toast.LENGTH_LONG).show();
                             counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                    .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                                    .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online",FirebaseAuth.getInstance().getCurrentUser().getUid()));
                             FirebaseInstanceId.getInstance().getInstanceId()
                                     .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                                         @Override
@@ -443,7 +443,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     if (FirebaseAuth.getInstance().getCurrentUser()!=null){
                         currentUserRef.onDisconnect().removeValue();
                         counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online",FirebaseAuth.getInstance().getCurrentUser().getUid()));
                         FirebaseInstanceId.getInstance().getInstanceId()
                                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                                     @Override

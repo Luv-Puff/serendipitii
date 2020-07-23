@@ -248,7 +248,7 @@ public class UserListActivity extends AppCompatActivity {
                     if (FirebaseAuth.getInstance().getCurrentUser()!=null){
                         currentUserRef.onDisconnect().removeValue();
                         counterRef.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online"));
+                                .setValue(new User(FirebaseAuth.getInstance().getCurrentUser().getEmail(),"Online",FirebaseAuth.getInstance().getCurrentUser().getUid()));
                     }
 
                     userListAdapter.notifyDataSetChanged();
